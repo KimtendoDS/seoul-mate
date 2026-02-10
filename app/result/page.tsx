@@ -87,8 +87,6 @@ export default function FinalRoutePage() {
       strokeStyle: 'dash',
       strokeOpacity: 0.6
     });
-
-    console.log("✅ Naver Map Loaded with Key:", process.env.NEXT_PUBLIC_NAVER_CLIENT_ID);
   };
 
   // 🔥 핵심: 페이지가 바뀔 때(마운트될 때) 이미 스크립트가 로드되어 있다면 강제 초기화
