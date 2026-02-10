@@ -1,0 +1,13 @@
+{
+    "title": "SEOUL MATE",
+    "stay": "1. Stay Location",
+    "period": "2. Travel Period",
+    "budget": "3. Total Budget",
+    "meal": "4. Max Meal Cost",
+    "fav": "5. Favorite Foods",
+    "hate": "6. Dislike Foods",
+    "rating": "7. Min Store Rating",
+    "generate": "GENERATE SCHEDULE 🚀",
+    "placeholder_stay": "Search your stay location",
+    "placeholder_food": "Select food"
+  }
