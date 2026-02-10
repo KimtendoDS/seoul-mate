@@ -3,23 +3,19 @@
 import { useState, useEffect } from 'react';
 import Script from 'next/script';
 import { useRouter } from 'next/navigation';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
-// 1. JSON 파일 임포트 (파일이 실제로 해당 경로에 있어야 합니다)
-// 만약 에러가 나면 public 폴더 등에 넣고 fetch로 가져오는 방식이 안전하지만, 
-// 일단 기존 로직대로 임포트합니다.
 import ko from '@/locales/ko.json';
 import en from '@/locales/en.json';
 
 export default function SetupPage() {
   const router = useRouter();
-  
-  // Hydration 에러 방지용 mounted 상태
+
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
   const [mounted, setMounted] = useState(false);
-  
-  // 다국어 매핑
   const translations: any = { ko, en };
-  
-  // 상태 관리
   const [langCode, setLangCode] = useState('ko');
   const [locDisplay, setLocDisplay] = useState('');
   const [budget, setBudget] = useState({ val: 0, res: 0 });
@@ -28,15 +24,11 @@ export default function SetupPage() {
   const [favFoods, setFavFoods] = useState<{name: string, icon: string}[]>([]);
   const [hateFoods, setHateFoods] = useState<{name: string, icon: string}[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [isAddrOpen, setIsAddrOpen] = useState(false);
 
-  // 마운트 체크
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
-  // 현재 언어 데이터 선택 (데이터가 없을 경우를 대비해 방어 로직 추가)
   const t = translations[langCode] || ko;
-
   const langOptions = [
     { code: 'ko', name: '한국어', flag: 'kr' },
     { code: 'en', name: 'English', flag: 'us' }
@@ -63,186 +55,213 @@ export default function SetupPage() {
   const toggleFood = (type: 'fav' | 'hate', food: {name: string, icon: string}) => {
     const list = type === 'fav' ? favFoods : hateFoods;
     const setList = type === 'fav' ? setFavFoods : setHateFoods;
-    if (!list.find(f => f.name === food.name)) {
+    if (list.find(f => f.name === food.name)) {
+      setList(list.filter(f => f.name !== food.name));
+    } else {
       setList([...list, food]);
     }
-    setOpenDropdown(null);
   };
 
-  const handleGenerate = () => {
-    router.push('/dashboard');
-  };
+  const openPostcode = () => { setIsAddrOpen(true); };
 
-  // 마운트 전에는 아무것도 렌더링하지 않음 (Hydration 에러 해결)
+  useEffect(() => {
+    if (isAddrOpen) {
+      const container = document.getElementById('kakao-layer');
+      if (container && (window as any).daum) {
+        new (window as any).daum.Postcode({
+          oncomplete: (data: any) => {
+            setLocDisplay(data.address);
+            setIsAddrOpen(false);
+          },
+          width: '100%',
+          height: '100%'
+        }).embed(container);
+      }
+    }
+  }, [isAddrOpen]);
+
+  const handleGenerate = () => { router.push('/dashboard'); };
+
   if (!mounted) return <div className="min-h-screen bg-[#f1f5f9]" />;
 
   return (
-    <main className="min-h-screen bg-[#f1f5f9] flex justify-center items-center p-6 font-[Pretendard]">
-      {/* 외부 리소스 로드 */}
+    <main className="fixed inset-0 bg-[#f1f5f9] flex justify-center items-center p-3 sm:p-6 font-[Pretendard] overflow-hidden">
       <Script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" />
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css" />
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-      <div className="w-full max-w-[680px] bg-white p-14 rounded-[50px] shadow-2xl">
-        
-        {/* 헤더: 로고 & 다국어 전환 */}
-        <div className="flex justify-between items-center mb-12">
-          <h2 className="text-[#00966b] text-3xl font-black italic tracking-tighter">
-            {t.title}
-          </h2>
+      <div className="w-full max-w-[600px] bg-white rounded-[40px] shadow-2xl flex flex-col max-h-[94dvh] overflow-hidden relative">
+        <div className="flex-1 overflow-y-auto px-6 py-10 sm:px-14 sm:py-12 scrollbar-hide">
           
-          <div className="relative">
-            <button 
-              onClick={() => setOpenDropdown(openDropdown === 'lang' ? null : 'lang')}
-              className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-2xl border border-slate-100"
-            >
-              <span className={`fi fi-${langOptions.find(l => l.code === langCode)?.flag}`}></span>
-              <span className="text-xs font-bold text-slate-700">{langOptions.find(l => l.code === langCode)?.name}</span>
-              <i className={`fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform ${openDropdown === 'lang' ? 'rotate-180' : ''}`}></i>
-            </button>
-            {openDropdown === 'lang' && (
-              <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 py-1 overflow-hidden">
-                {langOptions.map(l => (
-                  <div key={l.code} onClick={() => { setLangCode(l.code); setOpenDropdown(null); }} className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-[#f0f9f6] hover:text-[#00966b] cursor-pointer flex items-center gap-2">
-                    <span className={`fi fi-${l.flag}`}></span> {l.name}
+          <div className="flex justify-between items-center mb-10">
+            <h2 className="text-[#00966b] text-2xl sm:text-3xl font-black italic tracking-tighter">{t.title}</h2>
+            <div className="relative">
+              <button onClick={() => setOpenDropdown(openDropdown === 'lang' ? null : 'lang')} className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-2xl border border-slate-100">
+                <span className={`fi fi-${langOptions.find(l => l.code === langCode)?.flag}`}></span>
+                <span className="text-[10px] font-bold text-slate-700">{langOptions.find(l => l.code === langCode)?.name}</span>
+                <i className={`fa-solid fa-chevron-down text-[8px] text-slate-400 ${openDropdown === 'lang' ? 'rotate-180' : ''}`}></i>
+              </button>
+              {openDropdown === 'lang' && (
+                <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-100 rounded-2xl shadow-xl z-[60] py-1 overflow-hidden">
+                  {langOptions.map(l => (
+                    <div key={l.code} onClick={() => { setLangCode(l.code); setOpenDropdown(null); }} className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-[#f0f9f6] hover:text-[#00966b] cursor-pointer flex items-center gap-2">
+                      <span className={`fi fi-${l.flag}`}></span> {l.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-8 text-left">
+            <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">{t.stay}</label>
+            <div className="flex gap-3 h-14">
+              <input type="text" value={locDisplay} readOnly placeholder={t.placeholder_stay} className="flex-1 px-5 rounded-2xl border-2 border-slate-50 bg-slate-50 font-bold text-sm outline-none" />
+              <button onClick={openPostcode} className="w-14 bg-[#e6f5f0] text-[#00966b] rounded-2xl flex items-center justify-center text-xl flex-shrink-0 active:scale-95 transition-transform">
+                <i className="fa-solid fa-location-dot"></i>
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-8 text-left">
+            <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">{t.period}</label>
+            <DatePicker
+              selectsRange startDate={startDate} endDate={endDate}
+              onChange={(update: any) => { setStartDate(update[0]); setEndDate(update[1]); }}
+              withPortal
+              customInput={
+                <div className="w-full h-14 rounded-2xl bg-slate-50 flex items-center justify-between px-5 cursor-pointer border-2 border-transparent">
+                  <span className="text-sm font-bold text-slate-700">{startDate.toLocaleDateString()} - {endDate?.toLocaleDateString()}</span>
+                  <i className="fa-regular fa-calendar text-slate-400"></i>
+                </div>
+              }
+            />
+          </div>
+
+          {/* 💰 [수정 포인트] 예산/식비 섹션: 한 줄에 배치 & 너비 50:50 */}
+          {[ 
+            { label: t.budget, state: budget, setState: setBudget, curr: budCurr, setCurr: setBudCurr, id: 'bud' },
+            { label: t.meal, state: meal, setState: setMeal, curr: mealCurr, setCurr: setMealCurr, id: 'meal' }
+          ].map((item) => (
+            <div key={item.id} className="mb-8 text-left relative">
+              <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">{item.label}</label>
+              
+              <div className="flex items-center gap-2 h-14 w-full">
+                {/* 1. 셀렉트 (고정 너비) */}
+                <div 
+                  onClick={() => setOpenDropdown(openDropdown === item.id ? null : item.id)} 
+                  className="flex items-center justify-center gap-1.5 px-2 bg-slate-50 rounded-2xl cursor-pointer min-w-[75px] sm:min-w-[90px] h-full border-2 border-transparent"
+                >
+                  <span className={`fi fi-${item.curr.flag} text-xs`}></span>
+                  <span className="text-[10px] font-black">{item.curr.code}</span>
+                </div>
+
+                {/* 2. 입력창 & 3. 결과창 (정확히 50:50 분할) */}
+                <div className="flex flex-1 gap-2 h-full min-w-0">
+                  <input 
+                    type="number" 
+                    placeholder="0" 
+                    className="w-1/2 px-3 rounded-2xl bg-slate-50 font-bold text-[13px] text-right outline-none focus:bg-white focus:border-[#00966b]/20 border-2 border-transparent transition-all"
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      item.setState({ val: v, res: calcWon(v, item.curr.rate) });
+                    }} 
+                  />
+                  <div className="w-1/2 px-3 rounded-2xl bg-[#f0f9f6] flex items-center justify-end text-[#00966b] font-black text-[11px] overflow-hidden">
+                    <span className="truncate">{item.state.res.toLocaleString()} ₩</span>
                   </div>
-                ))}
+                </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* 1. 위치 */}
-        <div className="mb-10 text-left">
-          <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">{t.stay}</label>
-          <div className="flex gap-3 h-14">
-            <input type="text" value={locDisplay} readOnly placeholder={t.placeholder_stay} className="flex-1 px-6 rounded-2xl border-2 border-slate-50 bg-slate-50 font-bold text-sm outline-none" />
-            <button className="w-14 bg-[#e6f5f0] text-[#00966b] rounded-2xl flex items-center justify-center text-xl hover:bg-[#00966b] hover:text-white transition-all"><i className="fa-solid fa-location-dot"></i></button>
-          </div>
-        </div>
-
-        {/* 2. 기간 */}
-        <div className="mb-10 text-left">
-          <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">{t.period}</label>
-          <div className="flex items-center gap-3 h-14">
-            <input type="date" className="flex-1 px-5 rounded-2xl border-2 border-slate-50 bg-slate-50 font-bold text-sm outline-none" />
-            <div className="w-4 h-0.5 bg-slate-200"></div>
-            <input type="date" className="flex-1 px-5 rounded-2xl border-2 border-slate-50 bg-slate-50 font-bold text-sm outline-none" />
-          </div>
-        </div>
-
-        {/* 3 & 4. 예산/식비 */}
-        {[ 
-          { label: t.budget, state: budget, setState: setBudget, curr: budCurr, setCurr: setBudCurr, id: 'bud' },
-          { label: t.meal, state: meal, setState: setMeal, curr: mealCurr, setCurr: setMealCurr, id: 'meal' }
-        ].map((item) => (
-          <div key={item.id} className="mb-10 text-left">
-            <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">{item.label}</label>
-            <div className="flex gap-3 h-14 relative">
-              <div onClick={() => setOpenDropdown(openDropdown === item.id ? null : item.id)} className="flex items-center gap-2 px-4 bg-slate-50 border-2 border-slate-50 rounded-2xl cursor-pointer min-w-[100px]">
-                <span className={`fi fi-${item.curr.flag}`}></span>
-                <span className="text-xs font-black text-slate-600">{item.curr.code}</span>
-              </div>
               {openDropdown === item.id && (
-                <div className="absolute top-16 left-0 w-[120px] bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 py-1 overflow-hidden">
+                <div className="absolute top-[85px] left-0 w-32 bg-white border border-slate-100 rounded-2xl shadow-xl z-[60] py-1">
                   {currencyOptions.map(c => (
-                    <div key={c.code} onClick={() => { item.setCurr(c); setOpenDropdown(null); }} className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-[#f0f9f6] hover:text-[#00966b] cursor-pointer flex items-center gap-2">
+                    <div key={c.code} onClick={() => { item.setCurr(c); setOpenDropdown(null); }} className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-[#f0f9f6] cursor-pointer flex items-center gap-2">
                       <span className={`fi fi-${c.flag}`}></span> {c.code}
                     </div>
                   ))}
                 </div>
               )}
-              <input type="number" placeholder="0" className="flex-1 px-5 rounded-2xl border-2 border-slate-50 bg-slate-50 font-bold text-sm text-right outline-none focus:border-[#00966b] focus:bg-white" 
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  item.setState({ val: v, res: calcWon(v, item.curr.rate) });
-                }} 
-              />
-              <div className="flex-1 px-5 rounded-2xl bg-[#f0f9f6] flex items-center justify-end text-[#00966b] font-black text-sm">
-                {item.state.res.toLocaleString()} ₩
-              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {/* 5. 좋아하는 음식 */}
-        <div className="mb-10 relative text-left">
-          <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">{t.fav}</label>
-          {favFoods.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-top-1">
-              {favFoods.map(f => (
-                <span key={f.name} className="px-4 py-2 bg-[#e6f5f0] text-[#00966b] rounded-full text-[12px] font-black flex items-center gap-2 border border-[#c2e7db]">
-                  {f.icon} {f.name} <button onClick={() => setFavFoods(favFoods.filter(i => i.name !== f.name))} className="ml-1 opacity-50 hover:opacity-100">✕</button>
-                </span>
-              ))}
+          <div className="mb-8 relative text-left">
+            <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">{t.fav}</label>
+            <div onClick={() => setOpenDropdown(openDropdown === 'fav' ? null : 'fav')} className="w-full min-h-[56px] px-5 py-2 rounded-2xl border-2 border-slate-50 bg-slate-50 flex items-center justify-between cursor-pointer">
+              <div className="flex flex-wrap gap-1.5">
+                {favFoods.length > 0 ? favFoods.map(f => (
+                  <span key={f.name} className="px-2 py-1 bg-white rounded-lg text-[10px] font-black flex items-center gap-1 shadow-sm border border-[#00966b]/10">
+                    {f.icon} {f.name}
+                  </span>
+                )) : <span className="text-xs text-slate-400 font-bold">{t.placeholder_food}</span>}
+              </div>
+              <i className="fa-solid fa-chevron-down text-[10px] text-slate-300 ml-2"></i>
             </div>
-          )}
-          <div onClick={() => setOpenDropdown(openDropdown === 'fav' ? null : 'fav')} className={`w-full h-14 px-6 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${openDropdown === 'fav' ? 'border-[#00966b] bg-white' : 'border-slate-50 bg-slate-50'}`}>
-            <span className="text-sm font-bold text-slate-400">{t.placeholder_food}</span>
-            <i className={`fa-solid fa-chevron-down text-xs transition-transform ${openDropdown === 'fav' ? 'rotate-180 text-[#00966b]' : 'text-slate-300'}`}></i>
-          </div>
-          {openDropdown === 'fav' && (
-            <div className="absolute top-[100%] left-0 w-full mt-2 bg-white border border-slate-100 rounded-3xl shadow-2xl z-[60] p-3">
-              <div className="grid grid-cols-2 gap-2">
-                {foodOptions.map(f => (
-                  <div key={f.name} onClick={() => toggleFood('fav', f)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-[#f0f9f6] hover:text-[#00966b] cursor-pointer group">
-                    <span className="text-xl group-hover:scale-125 transition-transform">{f.icon}</span>
-                    <span className="text-xs font-black">{f.name}</span>
+            {openDropdown === 'fav' && (
+              <div className="absolute top-[85px] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-xl z-[60] grid grid-cols-3 gap-1 p-2">
+                {foodOptions.map(food => (
+                  <div key={food.name} onClick={() => toggleFood('fav', food)} className={`p-3 rounded-xl text-center cursor-pointer transition-all ${favFoods.find(f => f.name === food.name) ? 'bg-[#f0f9f6] text-[#00966b]' : 'hover:bg-slate-50'}`}>
+                    <div className="text-xl mb-1">{food.icon}</div>
+                    <div className="text-[10px] font-bold">{food.name}</div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* 6. 싫어하는 음식 */}
-        <div className="mb-10 relative text-left">
-          <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">{t.hate}</label>
-          {hateFoods.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-top-1">
-              {hateFoods.map(f => (
-                <span key={f.name} className="px-4 py-2 bg-red-50 text-red-500 rounded-full text-[12px] font-black flex items-center gap-2 border border-red-100">
-                  {f.icon} {f.name} <button onClick={() => setHateFoods(hateFoods.filter(i => i.name !== f.name))} className="ml-1 opacity-50 hover:opacity-100">✕</button>
-                </span>
-              ))}
-            </div>
-          )}
-          <div onClick={() => setOpenDropdown(openDropdown === 'hate' ? null : 'hate')} className={`w-full h-14 px-6 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${openDropdown === 'hate' ? 'border-red-400 bg-white' : 'border-slate-50 bg-slate-50'}`}>
-            <span className="text-sm font-bold text-slate-400">{t.placeholder_food}</span>
-            <i className={`fa-solid fa-chevron-down text-xs transition-transform ${openDropdown === 'hate' ? 'rotate-180 text-red-400' : 'text-slate-300'}`}></i>
+            )}
           </div>
-          {openDropdown === 'hate' && (
-            <div className="absolute top-[100%] left-0 w-full mt-2 bg-white border border-slate-100 rounded-3xl shadow-2xl z-[60] p-3">
-              <div className="grid grid-cols-2 gap-2">
-                {foodOptions.map(f => (
-                  <div key={f.name} onClick={() => toggleFood('hate', f)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 hover:text-red-500 cursor-pointer group">
-                    <span className="text-xl group-hover:scale-125 transition-transform">{f.icon}</span>
-                    <span className="text-xs font-black">{f.name}</span>
+
+          <div className="mb-8 relative text-left">
+            <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">{t.hate}</label>
+            <div onClick={() => setOpenDropdown(openDropdown === 'hate' ? null : 'hate')} className="w-full min-h-[56px] px-5 py-2 rounded-2xl border-2 border-slate-50 bg-slate-50 flex items-center justify-between cursor-pointer">
+              <div className="flex flex-wrap gap-1.5">
+                {hateFoods.length > 0 ? hateFoods.map(f => (
+                  <span key={f.name} className="px-2 py-1 bg-red-50 text-red-500 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-sm border border-red-100">
+                    {f.icon} {f.name}
+                  </span>
+                )) : <span className="text-xs text-slate-400 font-bold">{t.placeholder_food}</span>}
+              </div>
+              <i className="fa-solid fa-chevron-down text-[10px] text-slate-300 ml-2"></i>
+            </div>
+            {openDropdown === 'hate' && (
+              <div className="absolute top-[85px] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-xl z-[60] grid grid-cols-3 gap-1 p-2">
+                {foodOptions.map(food => (
+                  <div key={food.name} onClick={() => toggleFood('hate', food)} className={`p-3 rounded-xl text-center cursor-pointer transition-all ${hateFoods.find(f => f.name === food.name) ? 'bg-red-50 text-red-500' : 'hover:bg-slate-50'}`}>
+                    <div className="text-xl mb-1">{food.icon}</div>
+                    <div className="text-[10px] font-bold">{food.name}</div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* 7. 별점 */}
-        <div className="mb-14 text-left">
-          <label className="text-[11px] font-black text-slate-400 uppercase mb-4 block tracking-widest">{t.rating}</label>
-          <div className="flex gap-3 h-14">
-            {[1.0, 2.0, 3.0, 4.0, 5.0].map((num) => (
-              <button key={num} onClick={() => setRating(num)} className={`flex-1 rounded-[20px] border-2 font-black text-xs transition-all flex items-center justify-center gap-1 ${rating === num ? 'bg-[#00966b] border-[#00966b] text-white shadow-lg' : 'bg-white border-slate-50 text-slate-300'}`}>
-                <i className="fa-solid fa-star text-[9px]"></i> {num.toFixed(1)}
-              </button>
-            ))}
+          <div className="mb-2 text-left">
+            <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">{t.rating}</label>
+            <div className="flex gap-1 h-14">
+              {[1, 2, 3, 4, 5].map((num) => (
+                <button key={num} onClick={() => setRating(num)} className={`flex-1 rounded-2xl border-2 font-black text-[11px] flex items-center justify-center gap-1 transition-all ${rating === num ? 'bg-[#00966b] border-[#00966b] text-white shadow-md' : 'bg-white border-slate-50 text-slate-300'}`}>
+                  <i className="fa-solid fa-star text-[8px]"></i>{num.toFixed(1)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <button 
-          onClick={handleGenerate}
-          className="w-full h-20 bg-[#00966b] text-white rounded-[30px] font-black text-xl shadow-xl shadow-green-900/20 active:scale-[0.98] transition-all"
-        >
-          {t.generate}
-        </button>
+        <div className="px-6 py-6 border-t border-slate-50 bg-white">
+          <button onClick={handleGenerate} className="w-full h-16 bg-[#00966b] text-white rounded-[25px] font-black text-lg shadow-xl active:scale-95 transition-all">
+            {t.generate}
+            <i className="fa-solid fa-robot text-2xl"></i>
+          </button>
+        </div>
+
+        {isAddrOpen && (
+          <div className="absolute inset-0 z-[100] flex flex-col justify-end">
+            <div className="absolute inset-0 bg-black/30" onClick={() => setIsAddrOpen(false)}></div>
+            <div className="relative bg-white rounded-t-[30px] shadow-2xl flex flex-col" style={{ height: '60%' }}>
+              <div className="w-full flex justify-center py-4 border-b"><div className="w-12 h-1.5 bg-slate-200 rounded-full"></div></div>
+              <div id="kakao-layer" className="flex-1 w-full overflow-hidden"></div>
+              <button onClick={() => setIsAddrOpen(false)} className="w-full py-4 bg-slate-50 text-slate-500 font-bold text-sm">닫기</button>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

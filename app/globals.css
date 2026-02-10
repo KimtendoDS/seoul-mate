@@ -7,3 +7,50 @@
 body {
   font-family: 'Pretendard', -apple-system, sans-serif;
 }
+/* react-datepicker 커스텀 예시 */
+.react-datepicker {
+  font-family: 'Pretendard', sans-serif !important;
+  border: none !important;
+  border-radius: 24px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+  padding: 10px !important;
+}
+.react-datepicker__header {
+  background-color: white !important;
+  border-bottom: none !important;
+}
+.react-datepicker__day--selected, .react-datepicker__day--in-range {
+  background-color: #00966b !important;
+  border-radius: 12px !important;
+}
+/* 이거 하나로 달력 알맹이가 2025년 버전으로 바뀝니다 */
+.modern-datepicker-portal .react-datepicker {
+  border: none !important;
+  border-radius: 30px !important;
+  padding: 20px !important;
+  font-family: inherit !important;
+  box-shadow: 0 30px 60px -12px rgba(0,0,0,0.25) !important;
+}
+
+.modern-datepicker-portal .react-datepicker__header {
+  background: white !important;
+  border-bottom: none !important;
+  padding-top: 20px !important;
+}
+
+.modern-datepicker-portal .react-datepicker__day--in-range {
+  background-color: #e6f5f0 !important;
+  color: #00966b !important;
+  border-radius: 0 !important;
+}
+
+.modern-datepicker-portal .react-datepicker__day--range-start,
+.modern-datepicker-portal .react-datepicker__day--range-end {
+  background-color: #00966b !important;
+  color: white !important;
+  border-radius: 12px !important;
+}
+
+.modern-datepicker-portal .react-datepicker__day:hover {
+  border-radius: 12px !important;
+}

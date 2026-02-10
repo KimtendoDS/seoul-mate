@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // Link 컴포넌트 추가
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -36,17 +36,19 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-[#f1f5f9] font-[Pretendard] text-[#1A1A1A] pb-10">
       
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md flex justify-between items-center px-6 py-5 border-b border-slate-100">
-        <h2 className="text-[#00966b] text-2xl font-[1000] italic tracking-tighter">SEOUL MATE</h2>
-        <div className="flex gap-2">
-          <div className="w-10 h-10 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center border border-slate-100"><i className="fa-solid fa-gear"></i></div>
-          <div className="w-10 h-10 bg-[#e6f5f0] text-[#00966b] rounded-2xl flex items-center justify-center border border-[#c2e7db]"><i className="fa-solid fa-wand-magic-sparkles"></i></div>
-        </div>
+      {/* 수정된 헤더: 투명 배경 + 양쪽 버튼 배치 */}
+      {/* 3번째 페이지와 디자인을 맞춘 헤더 */}
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md flex items-center px-5 py-5 border-b border-slate-100">
+        <button 
+          onClick={() => router.push('/')} 
+          className="w-11 h-11 bg-white rounded-2xl shadow-xl flex items-center justify-center text-slate-400 hover:text-emerald-600 active:scale-95 transition-all border border-white/50"
+        >
+          <i className="fa-solid fa-arrow-left"></i>
+        </button>
       </header>
 
       <div className="px-5 space-y-6 mt-6">
         {dayPlans.map((plan) => (
-          /* [해결책] Link 컴포넌트로 감싸서 클릭 신뢰도 100% 확보 */
           <Link href="/result" key={plan.day} className="block no-underline">
             <div className="relative h-[440px] w-full bg-white rounded-[45px] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.06)] border border-white active:scale-[0.98] transition-all cursor-pointer group">
               
@@ -86,14 +88,45 @@ export default function DashboardPage() {
                     ))}
                   </div>
 
-                  <div className="w-full bg-[#00966b] h-16 rounded-[26px] flex items-center justify-between px-8 shadow-lg shadow-green-900/10 group-active:bg-[#007a57] transition-all">
+                  {/* 하단 영역: 원형 프레임 안의 직사각형 국기 + 인플루언서 프로필 */}
+                  <div className="w-full bg-[#00966b] h-16 rounded-[26px] flex items-center justify-between px-6 shadow-lg shadow-green-900/10 group-active:bg-[#007a57] transition-all relative overflow-hidden">
+                    
                     <div className="flex items-center gap-3 text-white"> 
-                      <img src="https://flagcdn.com/w40/kr.png" alt="KR" className="w-6 h-auto rounded-sm" />
-                      <span className="text-[26px] font-[1000] italic tracking-tighter leading-none">
-                        <span className="text-[14px] mr-0.5 opacity-70 font-sans font-bold">₩</span>{plan.cost}
+                      {/* 1. 국기: 동그란 원형 프레임 안에 원래 국기 모양 유지 */}
+                      <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center border border-white/10 flex-shrink-0">
+                        <img 
+                          src="https://flagcdn.com/w40/kr.png" 
+                          alt="KR" 
+                          className="w-5 h-auto rounded-[2px] shadow-sm" 
+                        />
+                      </div>
+                      
+                      <span className="text-[24px] font-[1000] italic tracking-tighter leading-none">
+                        <span className="text-[14px] mr-0.5 opacity-70 font-sans font-bold"></span>₩ {plan.cost}
                       </span>
                     </div>
-                    <i className="fa-solid fa-chevron-right text-white text-lg"></i>
+
+                    {/* 2. 인플루언서 프로필: 겹쳐진 불규칙 구조 */}
+                    <div className="flex items-center">
+                      <div className="flex -space-x-3 mr-4">
+                        <img 
+                          className="w-8 h-8 rounded-full border-2 border-[#00966b] object-cover z-30 ring-1 ring-black/5" 
+                          src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" 
+                          alt="inf 1" 
+                        />
+                        <img 
+                          className="w-8 h-8 rounded-full border-2 border-[#00966b] object-cover z-20 translate-y-[-2px] ring-1 ring-black/5" 
+                          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" 
+                          alt="inf 2" 
+                        />
+                        <img 
+                          className="w-8 h-8 rounded-full border-2 border-[#00966b] object-cover z-10 translate-x-[1px] translate-y-[2px] ring-1 ring-black/5" 
+                          src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" 
+                          alt="inf 3" 
+                        />
+                      </div>
+                      <i className="fa-solid fa-chevron-right text-white/50 text-sm"></i>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -105,7 +138,7 @@ export default function DashboardPage() {
         <div className="bg-slate-900 rounded-[35px] p-7 flex justify-between items-center shadow-2xl relative overflow-hidden mt-2">
           <div className="relative z-10">
             <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] mb-1 block">Full Trip Summary</span>
-            <h4 className="text-3xl font-[1000] italic tracking-tighter text-white leading-none"><span className="text-[#00966b] mr-1.5">₩</span>365,000</h4>
+            <h4 className="text-3xl font-[1000] italic tracking-tighter text-white leading-none"><span className="text-[#00966b] mr-1.5"></span>₩ 365,000</h4>
           </div>
           <button className="relative z-10 bg-[#00966b] text-white h-14 px-7 rounded-2xl font-black text-[13px] uppercase italic active:scale-95 transition-all">Download</button>
         </div>
